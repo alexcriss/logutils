@@ -10,6 +10,10 @@ import (
 
 var errorer *Logger
 
+const (
+	ERROR = "error"
+)
+
 type StructuredError struct {
 	Attrs []slog.Attr
 	Err   error
