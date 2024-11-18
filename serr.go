@@ -2,6 +2,7 @@ package logutils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -45,7 +46,9 @@ func (e *Errorer) Error(err error, additional ...slog.Attr) error {
 	if err == nil {
 		return nil
 	}
-	if serr, ok := err.(StructuredError); ok {
+	var serr StructuredError
+
+	if errors.As(err, &serr) {
 		additional = append(additional, serr.Attrs...)
 	}
 	attrs := append(e.attrs, additional...)
@@ -68,7 +71,7 @@ func ReplaceSource(groups []string, a slog.Attr) slog.Attr {
 		for {
 			frame, more := frames.Next()
 			// We skip everything in the call stack that is before this function and the function itself
-			if strings.Contains(frame.File, "runtime/") || strings.Contains(frame.File, "log/slog") || strings.Contains(frame.File, "utils/serr") {
+			if strings.Contains(frame.File, "runtime/") || strings.Contains(frame.File, "log/slog") || strings.Contains(frame.File, "serr.go") {
 				if !more {
 					break
 				} else {
