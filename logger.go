@@ -17,6 +17,13 @@ var (
 	defaultOptions slog.HandlerOptions
 )
 
+type Format string
+
+const (
+	JSON = "json"
+	TEXT = "text"
+)
+
 func ReplaceLogLevel(groups []string, a slog.Attr) slog.Attr {
 	if a.Key == slog.LevelKey {
 		level := a.Value.Any().(slog.Level)
@@ -40,7 +47,7 @@ func ReplaceLogLevel(groups []string, a slog.Attr) slog.Attr {
 	return a
 }
 
-func NewDefaultLogger(loglevel string) {
+func NewDefaultLogger(loglevel string, format Format) {
 	var level slog.Level
 	switch strings.ToUpper(loglevel) {
 	case LevelTraceName:
@@ -63,7 +70,13 @@ func NewDefaultLogger(loglevel string) {
 		ReplaceAttr: ReplaceLogLevel,
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &opts))
+	var logger *slog.Logger
+	switch format {
+	case JSON:
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, &opts))
+	case TEXT:
+		logger = slog.New(slog.NewTextHandler(os.Stdout, &opts))
+	}
 	defaultLogger = &Logger{
 		Logger: logger,
 	}
