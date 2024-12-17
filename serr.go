@@ -3,10 +3,7 @@ package logutils
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
-	"runtime"
-	"strings"
 )
 
 var errorer *Logger
@@ -53,36 +50,6 @@ func (e *Errorer) Error(err error, additional ...slog.Attr) error {
 	}
 	attrs := append(e.attrs, additional...)
 	return NewStructuredError(err, attrs...)
-}
-
-func ReplaceSource(groups []string, a slog.Attr) slog.Attr {
-	// Run through the default function for replacing log levels
-	a = ReplaceLogLevel(groups, a)
-
-	if a.Key == slog.SourceKey {
-		pc := make([]uintptr, 15)
-		n := runtime.Callers(0, pc)
-		if n == 0 {
-			return slog.Attr{}
-		}
-
-		pc = pc[:n] // pass only valid pcs to runtime.CallersFrames
-		frames := runtime.CallersFrames(pc)
-		for {
-			frame, more := frames.Next()
-			// We skip everything in the call stack that is before this function and the function itself
-			if strings.Contains(frame.File, "runtime/") || strings.Contains(frame.File, "log/slog") || strings.Contains(frame.File, "serr.go") {
-				if !more {
-					break
-				} else {
-					continue
-				}
-			}
-
-			return slog.Attr{Key: slog.SourceKey, Value: slog.StringValue(fmt.Sprintf("%s:%d", frame.File, frame.Line))}
-		}
-	}
-	return a
 }
 
 func SetDefaultErrorer() {

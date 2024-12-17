@@ -2,8 +2,10 @@ package logutils
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -23,6 +25,39 @@ const (
 	JSON = "json"
 	TEXT = "text"
 )
+
+func ReplaceSource(groups []string, a slog.Attr) slog.Attr {
+	// Run through the default function for replacing log levels
+	a = ReplaceLogLevel(groups, a)
+
+	if a.Key == slog.SourceKey {
+		pc := make([]uintptr, 15)
+		n := runtime.Callers(0, pc)
+		if n == 0 {
+			return slog.Attr{}
+		}
+
+		pc = pc[:n] // pass only valid pcs to runtime.CallersFrames
+		frames := runtime.CallersFrames(pc)
+		for {
+			frame, more := frames.Next()
+			// We skip everything in the call stack that is before this function and the function itself
+			if strings.Contains(frame.File, "runtime/") ||
+				strings.Contains(frame.File, "github.com/alexcriss/logutils") ||
+				strings.Contains(frame.File, "log/slog") ||
+				strings.Contains(frame.File, "serr.go") {
+				if !more {
+					break
+				} else {
+					continue
+				}
+			}
+
+			return slog.Attr{Key: slog.SourceKey, Value: slog.StringValue(fmt.Sprintf("%s:%d", frame.File, frame.Line))}
+		}
+	}
+	return a
+}
 
 func ReplaceLogLevel(groups []string, a slog.Attr) slog.Attr {
 	if a.Key == slog.LevelKey {
@@ -67,7 +102,7 @@ func NewDefaultLogger(loglevel string, format Format) {
 	opts := slog.HandlerOptions{
 		AddSource:   true,
 		Level:       level,
-		ReplaceAttr: ReplaceLogLevel,
+		ReplaceAttr: ReplaceSource,
 	}
 
 	var logger *slog.Logger
