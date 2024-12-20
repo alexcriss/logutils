@@ -52,12 +52,12 @@ func (e *Errorer) Error(err error, additional ...slog.Attr) error {
 	return NewStructuredError(err, attrs...)
 }
 
-func SetDefaultErrorer() {
+func SetDefaultErrorer(format Format) {
 	opts := slog.HandlerOptions{
 		AddSource:   true,
 		ReplaceAttr: ReplaceSource,
 	}
-	errorer = NewLoggerFromDefault(&opts)
+	errorer = NewLoggerFromDefault(&opts, format)
 }
 
 func ErrLog(level slog.Level, msg string, err error, additional ...slog.Attr) {

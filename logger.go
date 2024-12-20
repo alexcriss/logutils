@@ -122,10 +122,17 @@ func DefaultLogger() *Logger {
 	return defaultLogger
 }
 
-func NewLoggerFromDefault(options *slog.HandlerOptions) *Logger {
+func NewLoggerFromDefault(options *slog.HandlerOptions, format Format) *Logger {
 	options.Level = defaultOptions.Level
+	var logger *slog.Logger
+	switch format {
+	case JSON:
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, options))
+	case TEXT:
+		logger = slog.New(slog.NewTextHandler(os.Stdout, options))
+	}
 	return &Logger{
-		Logger: slog.New(slog.NewJSONHandler(os.Stdout, options)),
+		Logger: logger,
 	}
 }
 
